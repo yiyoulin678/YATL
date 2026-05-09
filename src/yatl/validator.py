@@ -25,13 +25,19 @@ class BodyFormat(StrEnum):
 
         Returns:
             The corresponding BodyFormat enum value.
+
+        Raises:
+            ValueError: If the content type is not supported.
         """
-        if content_type == "application/json":
-            return cls.JSON
-        elif content_type == "application/xml":
-            return cls.XML
-        elif content_type == "text/plain":
-            return cls.TEXT
+
+        mapping = {
+            "application/json": cls.JSON,
+            "application/xml": cls.XML,
+            "text/plain": cls.TEXT,
+        }
+
+        if content_type in mapping:
+            return mapping[content_type]
         else:
             raise ValueError(f"Unsupported content type: {content_type}")
 
@@ -170,24 +176,6 @@ class ResponseValidator:
                 f"Expected status {expected_status}, got {self.response.status_code}"
             )
 
-    def _normalize_header_value(self, key: str, value: str) -> str:
-        """Normalizes a header value for comparison.
-
-        For the Content-Type header, removes parameters (e.g., charset).
-        For other headers, returns the value unchanged.
-
-        Args:
-            key: Header name.
-            value: Header value.
-
-        Returns:
-            Normalized value.
-        """
-        if key.lower() == "content-type":
-            # Strip parameters like charset
-            return value.split(";")[0].strip().lower()
-        return value
-
     def _validate_headers(self) -> None:
         """Validates that all expected headers are present and match.
 
@@ -201,8 +189,13 @@ class ResponseValidator:
                 actual = self.response.headers.get(key)
                 if actual is None:
                     raise AssertionError(f"Header '{key}' is missing")
-                norm_expected = self._normalize_header_value(key, expected_value)
-                norm_actual = self._normalize_header_value(key, actual)
+                if key.lower() == "content-type":
+                    norm_expected = get_content_type(expected_value)
+                    norm_actual = get_content_type(actual)
+                else:
+                    norm_expected = expected_value
+                    norm_actual = actual
+
                 if norm_actual != norm_expected:
                     raise AssertionError(
                         f"Header '{key}' expected '{norm_expected}', got '{norm_actual}' (original: '{actual}')"
@@ -239,7 +232,7 @@ class ResponseValidator:
         if body_spec is None:
             return
 
-        content_type = get_content_type(response=self.response)
+        content_type = get_content_type(self.response.headers.get("Content-Type", ""))
         validator = self._get_body_validator(content_type)
 
         if validator is not None:

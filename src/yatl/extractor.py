@@ -178,7 +178,7 @@ class DataExtractor:
         Returns:
             One of 'json', 'xml', 'text', or 'unknown'.
         """
-        content_type = get_content_type(response)
+        content_type = get_content_type(response.headers.get("Content-Type", ""))
         if "json" in content_type:
             return "json"
         if "xml" in content_type:

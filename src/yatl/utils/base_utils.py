@@ -15,15 +15,17 @@ def is_skipped(item: dict[str, bool]) -> bool:
     return item.get("skip", False)
 
 
-def get_content_type(response: Response) -> str:
-    """Extracts the media type from the response's Content-Type header.
+def get_content_type(value: str) -> str:
+    """Extracts the media type from a Content-Type header string.
+
+    Args:
+        value: Content-Type header value (e.g., "application/json; charset=utf-8")
 
     Returns:
         The media type without parameters, lowercased.
-        If the header is missing, returns an empty string.
+        If the input is empty, returns an empty string.
     """
-    ct = response.headers.get("content-type", "")
-    return ct.split(";")[0].strip().lower()
+    return value.split(";")[0].strip().lower()
 
 
 def get_nested_value(data: Any, path: str) -> Any:
