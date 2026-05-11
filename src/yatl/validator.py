@@ -9,45 +9,52 @@ from requests import Response
 from .utils import get_content_type, get_nested_value
 
 
-class ContentType(StrEnum):
-    """Enum for supported content types."""
+class ContentFormat(StrEnum):
+    """Unified enumeration for content formats.
 
-    JSON = "application/json"
-    XML = "application/xml"
-    TEXT = "text/plain"
-
-
-class BodyFormat(StrEnum):
-    """Enum for supported body formats."""
+    Combines both format names and their corresponding MIME types.
+    """
 
     JSON = "json"
     XML = "xml"
     TEXT = "text"
 
-    @classmethod
-    def from_content_type(cls, content_type: str) -> "BodyFormat":
-        """Determines the body format from the content type.
-
-        Args:
-            content_type: The content type string.
+    @property
+    def mime_type(self) -> str:
+        """Returns the MIME type for this format.
 
         Returns:
-            The corresponding BodyFormat enum value.
+            The MIME type string (e.g., "application/json" for JSON).
+        """
+        mapping = {
+            self.JSON: "application/json",
+            self.XML: "application/xml",
+            self.TEXT: "text/plain",
+        }
+        return mapping[self]
+
+    @classmethod
+    def from_mime_type(cls, mime_type: str) -> "ContentFormat":
+        """Determines the format from a MIME type.
+
+        Args:
+            mime_type: The MIME type string (e.g., "application/json").
+
+        Returns:
+            The corresponding ContentFormat enum value.
 
         Raises:
-            ValueError: If the content type is not supported.
+            ValueError: If the MIME type is not supported.
         """
-
+        normalized = get_content_type(mime_type)
         mapping = {
-            ContentType.JSON: cls.JSON,
-            ContentType.XML: cls.XML,
-            ContentType.TEXT: cls.TEXT,
+            "application/json": cls.JSON,
+            "application/xml": cls.XML,
+            "text/plain": cls.TEXT,
         }
-
-        if content_type in mapping:
-            return mapping[content_type]
-        else:
-            raise ValueError(f"Unsupported content type: {content_type}")
+        if normalized in mapping:
+            return mapping[normalized]
+        raise ValueError(f"Unsupported content type: {mime_type}")
 
 
 def validate_json_body(response: Response, expected_json: dict[str, Any]) -> None:
@@ -157,9 +164,9 @@ class ResponseValidator:
     """
 
     _body_validators = {
-        BodyFormat.JSON: validate_json_body,
-        BodyFormat.XML: validate_xml_body,
-        BodyFormat.TEXT: validate_text_body,
+        ContentFormat.JSON: validate_json_body,
+        ContentFormat.XML: validate_xml_body,
+        ContentFormat.TEXT: validate_text_body,
     }
 
     def __init__(self, response: Response, expect_spec: dict[str, Any]):
@@ -221,14 +228,14 @@ class ResponseValidator:
             A validator function or None if no match.
         """
         try:
-            fmt = BodyFormat.from_content_type(content_type)
+            fmt = ContentFormat.from_mime_type(content_type)
             return self._body_validators.get(fmt)
         except ValueError:
             return None
 
     def _extract_format_and_spec(
         self, body_spec: Any, content_type: str
-    ) -> tuple[BodyFormat, Any]:
+    ) -> tuple[ContentFormat, Any]:
         """
         Extracts the format and spec from the body spec.
 
@@ -243,17 +250,17 @@ class ResponseValidator:
             AssertionError: If the content-type is not supported.
         """
         if isinstance(body_spec, dict):
-            for fmt in BodyFormat:
+            for fmt in ContentFormat:
                 if fmt in body_spec:
                     return fmt, body_spec[fmt]
 
         try:
-            fmt = BodyFormat.from_content_type(content_type)
+            fmt = ContentFormat.from_mime_type(content_type)
             return fmt, body_spec
         except ValueError:
             raise AssertionError(f"Unsupported content-type: {content_type}")
 
-    def _validate_body(self, body_format, body_spec: Any) -> None:
+    def _validate_body(self, body_format: ContentFormat, body_spec: Any) -> None:
         """
         Validates the response body based on format.
 
