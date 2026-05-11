@@ -162,42 +162,105 @@ class DataExtractor:
     and applies the appropriate extraction method.
     """
 
-    _extractors = {
-        "json": JsonExtractor(),
-        "xml": XmlExtractor(),
-        "text": TextExtractor(),
-    }
-
     def __init__(self):
-        """Initializes the data extractor."""
-        pass
+        """Initializes the data extractor and registers default extractors."""
+        self._extractors = {}
+        self._format_detectors = []
+        self._register_defaults()
 
-    def _detect_format(self, response: Response) -> str:
-        """Try to guess the response format based on content.
+    def _register_defaults(self):
+        """
+        Register default extractors.
+        """
+        self.register("json", JsonExtractor())
+        self.register("xml", XmlExtractor())
+        self.register("text", TextExtractor())
+
+        self.register_format_detector(self._detect_json)
+        self.register_format_detector(self._detect_xml)
+        self.register_format_detector(self._detect_text)
+
+    def register(self, format_name, extractor):
+        """
+        Register an extractor for a specific format.
+
+        Args:
+            format_name: The format name (e.g., "json", "xml", "text").
+            extractor: The extractor instance.
+        """
+        self._extractors[format_name] = extractor
+
+    def register_format_detector(self, detector_func):
+        """
+        Register a format detector function.
+
+        A format detector function takes a Response object and returns the format
+        name (e.g., "json", "xml", "text") if the response matches the format,
+        or None if it does not.
+
+        Args:
+            detector_func: The format detector function.
+        """
+        self._format_detectors.append(detector_func)
+
+    def _detect_json(self, response):
+        """
+        Detects if the response is JSON.
+
+        Args:
+            response: The HTTP response object.
 
         Returns:
-            One of 'json', 'xml', 'text', or 'unknown'.
+            The format name if the response is JSON, or None if it is not.
         """
         content_type = get_content_type(response.headers.get("Content-Type", ""))
         if "json" in content_type:
             return "json"
-        if "xml" in content_type:
-            return "xml"
-        if "text/plain" in content_type or "text/html" in content_type:
-            return "text"
-
         try:
             response.json()
             return "json"
-        except json.JSONDecodeError:
-            pass
+        except:
+            return None
 
+    def _detect_xml(self, response):
+        """
+        Detects if the response is XML
+
+        Args:
+            response: The HTTP response object.
+
+        Returns:
+            The format name if the response is XML, or None if it is not.
+        """
+        content_type = get_content_type(response.headers.get("Content-Type", ""))
+        if "xml" in content_type:
+            return "xml"
         try:
             etree.fromstring(response.content)
             return "xml"
         except etree.XMLSyntaxError:
-            pass
+            return None
 
+    def _detect_text(self, response):
+        """
+        Detects if the response is text.
+
+        Args:
+            response: The HTTP response object.
+
+        Returns:
+            The format name if the response is text, or None if it is not.
+        """
+        content_type = get_content_type(response.headers.get("Content-Type", ""))
+        if "text" in content_type:
+            return "text"
+        return None
+
+    def _detect_format(self, response: Response) -> str:
+        for detector in self._format_detectors:
+            result = detector(response)
+            if result:
+                return result
         return "unknown"
 
     def extract(
