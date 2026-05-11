@@ -169,6 +169,9 @@ class DataExtractor:
         self._register_defaults()
 
     def _register_defaults(self):
+        """
+        Register default extractors.
+        """
         self.register("json", JsonExtractor())
         self.register("xml", XmlExtractor())
         self.register("text", TextExtractor())
@@ -178,13 +181,38 @@ class DataExtractor:
         self.register_format_detector(self._detect_text)
 
     def register(self, format_name, extractor):
+        """
+        Register an extractor for a specific format.
+
+        Args:
+            format_name: The format name (e.g., "json", "xml", "text").
+            extractor: The extractor instance.
+        """
         self._extractors[format_name] = extractor
 
     def register_format_detector(self, detector_func):
-        """Добавить функцию для определения формата"""
+        """
+        Register a format detector function.
+
+        A format detector function takes a Response object and returns the format
+        name (e.g., "json", "xml", "text") if the response matches the format,
+        or None if it does not.
+
+        Args:
+            detector_func: The format detector function.
+        """
         self._format_detectors.append(detector_func)
 
     def _detect_json(self, response):
+        """
+        Detects if the response is JSON.
+
+        Args:
+            response: The HTTP response object.
+
+        Returns:
+            The format name if the response is JSON, or None if it is not.
+        """
         content_type = get_content_type(response.headers.get("Content-Type", ""))
         if "json" in content_type:
             return "json"
@@ -195,6 +223,15 @@ class DataExtractor:
             return None
 
     def _detect_xml(self, response):
+        """
+        Detects if the response is XML
+
+        Args:
+            response: The HTTP response object.
+
+        Returns:
+            The format name if the response is XML, or None if it is not.
+        """
         content_type = get_content_type(response.headers.get("Content-Type", ""))
         if "xml" in content_type:
             return "xml"
@@ -205,6 +242,15 @@ class DataExtractor:
             return None
 
     def _detect_text(self, response):
+        """
+        Detects if the response is text.
+
+        Args:
+            response: The HTTP response object.
+
+        Returns:
+            The format name if the response is text, or None if it is not.
+        """
         content_type = get_content_type(response.headers.get("Content-Type", ""))
         if "text" in content_type:
             return "text"
