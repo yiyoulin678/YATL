@@ -19,6 +19,147 @@ class MockJsonResponse(Response):
         return self._json_data
 
 
+class MockXmlResponse(Response):
+    """Mock response with configurable XML content."""
+
+    def __init__(self, xml_data, status_code=200):
+        super().__init__()
+        self._content = xml_data.encode("utf-8")
+        self.status_code = status_code
+        self.headers["Content-Type"] = "application/xml"
+
+    @property
+    def content(self):
+        return self._content
+
+
+def test_validate_xml_body_simple():
+    """Simple test for XML validation."""
+    xml = """<?xml version="1.0"?>
+    <message>
+        <from>YATL</from>
+        <to>API Server</to>
+        <content>Hello World</content>
+    </message>"""
+
+    response = MockXmlResponse(xml)
+    validate_xml_body(
+        response,
+        {
+            "/message/from": "YATL",
+            "/message/to": "API Server",
+            "/message/content": "Hello World",
+        },
+    )
+
+
+def test_nested_xml_body_validation():
+    """Test nested XML validation."""
+    xml = """<?xml version="1.0"?>
+    <message>
+        <from>YATL</from>
+        <to>API Server</to>
+        <content>
+            <text>Hello World</text>
+            <date>2022-01-01</date>
+        </content>
+    </message>"""
+
+    response = MockXmlResponse(xml)
+    validate_xml_body(
+        response,
+        {
+            "/message/from": "YATL",
+            "/message/to": "API Server",
+            "/message/content/text": "Hello World",
+            "/message/content/date": "2022-01-01",
+        },
+    )
+
+
+def test_validate_xml_body_with_indexed_xpath():
+    nested_xml = """<?xml version="1.0" encoding="UTF-8"?>
+                <company>
+                    <name>TechCorp</name>
+                    <departments>
+                        <department id="1">
+                            <name>Engineering</name>
+                            <employees>
+                                <employee>
+                                    <id>101</id>
+                                    <name>John Doe</name>
+                                    <position>Senior Developer</position>
+                                    <skills>
+                                        <skill>Python</skill>
+                                        <skill>FastAPI</skill>
+                                        <skill>XML</skill>
+                                    </skills>
+                                </employee>
+                                <employee>
+                                    <id>102</id>
+                                    <name>Jane Smith</name>
+                                    <position>QA Engineer</position>
+                                    <skills>
+                                        <skill>Testing</skill>
+                                        <skill>Automation</skill>
+                                    </skills>
+                                </employee>
+                            </employees>
+                        </department>
+                        <department id="2">
+                            <name>Sales</name>
+                            <employees>
+                                <employee>
+                                    <id>201</id>
+                                    <name>Bob Johnson</name>
+                                    <position>Sales Manager</position>
+                                </employee>
+                            </employees>
+                        </department>
+                    </departments>
+                </company>"""
+
+    response = MockXmlResponse(nested_xml)
+    validate_xml_body(
+        response,
+        {
+            "/company/name": "TechCorp",
+            "/company/departments/department[1]/name": "Engineering",
+            "/company/departments/department[1]/employees/employee[1]/name": "John Doe",
+            "/company/departments/department[1]/employees/employee[1]/position": "Senior Developer",
+            "/company/departments/department[1]/employees/employee[1]/skills/skill[1]": "Python",
+            "/company/departments/department[1]/employees/employee[1]/skills/skill[2]": "FastAPI",
+            "/company/departments/department[2]/name": "Sales",
+            "/company/departments/department[2]/employees/employee[1]/id": "201",
+        },
+    )
+
+
+def test_validate_xml_body_invalid_xml():
+    response = MockXmlResponse("not xml at all")
+    with pytest.raises(AssertionError, match="Response is not valid XML"):
+        validate_xml_body(response, {})
+
+
+def test_validate_xml_body_missing_element():
+    xml = "<message><from>YATL</from></message>"
+    response = MockXmlResponse(xml)
+    with pytest.raises(
+        AssertionError, match="XML element with xpath '/message/to' not found"
+    ):
+        validate_xml_body(response, {"/message/to": "API Server"})
+
+
+def test_validate_xml_body_value_mismatch():
+    xml = "<message><from>YATL</from></message>"
+    response = MockXmlResponse(xml)
+    with pytest.raises(
+        AssertionError,
+        match="XML element '/message/from' expected 'Different', got 'YATL'",
+    ):
+        validate_xml_body(response, {"/message/from": "Different"})
+
+
 def test_validate_json_body_simple():
     """Test simple flat JSON validation."""
     response = MockJsonResponse({"name": "Alice", "age": 30})
