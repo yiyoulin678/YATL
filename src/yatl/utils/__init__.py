@@ -2,6 +2,7 @@
 from .base_utils import get_content_type, get_nested_value, is_skipped
 from .context_utils import create_context
 from .file_utils import (
+    DirectoryNotFoundError,
     InvalidYamlError,
     LoadError,
     TestStructureError,
@@ -16,6 +17,7 @@ __all__ = [
     "create_context",
     "search_files",
     "load_test_yaml",
+    "DirectoryNotFoundError",
     "LoadError",
     "InvalidYamlError",
     "TestStructureError",

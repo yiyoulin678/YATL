@@ -1,6 +1,12 @@
 import pytest
 
-from src.yatl.utils import create_context, is_skipped, load_test_yaml, search_files
+from src.yatl.utils import (
+    DirectoryNotFoundError,
+    create_context,
+    is_skipped,
+    load_test_yaml,
+    search_files,
+)
 
 
 def test_create_context_with_valid_data_returns_context(data):
@@ -44,6 +50,8 @@ def test_search_files():
 
 
 def test_search_files_with_invalid_path():
-    "Test that search_files returns an empty list with invalid path."
-    files = search_files("tests/data/not_found")
-    assert len(files) == 0
+    "Test that search_files raises a clear error with invalid path."
+    with pytest.raises(
+        DirectoryNotFoundError, match="Directory does not exist: tests/data/not_found"
+    ):
+        search_files("tests/data/not_found")

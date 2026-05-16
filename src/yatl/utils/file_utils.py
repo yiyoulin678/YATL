@@ -22,6 +22,12 @@ class TestStructureError(LoadError):
     pass
 
 
+class DirectoryNotFoundError(LoadError):
+    "Directory not found error."
+
+    pass
+
+
 def load_test_yaml(file_path: str) -> dict[str, str | int | list[Any]] | bool:
     """Loads and parses a YAML test file.
 
@@ -54,13 +60,12 @@ def search_files(base_path: str) -> list[str]:
     Returns:
         List of found file paths.
     """
+    if not os.path.isdir(base_path):
+        raise DirectoryNotFoundError(f"Directory does not exist: {base_path}")
+
     files = []
 
     def _search(current_path: str):
-        try:
-            os.listdir(current_path)
-        except FileNotFoundError:
-            return
         for item in os.listdir(current_path):
             full_path = os.path.join(current_path, item)
             if os.path.isfile(full_path) and (
