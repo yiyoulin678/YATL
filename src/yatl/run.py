@@ -44,6 +44,27 @@ def run_tests_concurrently(runner, test_path: str = ".", max_workers: int = 10) 
                 print(error(f"Test {futures[future]} failed with error: {e}"))
 
 
+def run_test_not_concurrently(runner, test_path: str = ".") -> None:
+    """Runs all tests one by one.
+
+    Args:
+        runner: Runner instance with a run_test method.
+        test_path: Path to directory containing test files.
+    """
+    files = search_files(test_path)
+    if not files:
+        print(skipped(f"No .yatl.yaml files found in {test_path}"))
+        return
+
+    print(info(f"Found {len(files)} test file(s)"))
+
+    for file in files:
+        try:
+            runner.run_test(file)
+        except Exception as e:
+            print(error(f"Test {file} failed with error: {e}"))
+
+
 class Runner:
     """Orchestrates the execution of YAML-based test suites.
 
