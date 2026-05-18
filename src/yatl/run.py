@@ -1,5 +1,5 @@
-import concurrent.futures
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
 from requests import Response
@@ -35,9 +35,9 @@ def run_tests_concurrently(runner, test_path: str = ".", max_workers: int = 10) 
 
     print(info(f"Found {len(files)} test file(s)"))
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(runner.run_test, file): file for file in files}
-        for future in concurrent.futures.as_completed(futures):
+        for future in as_completed(futures):
             try:
                 future.result()
             except Exception as e:
