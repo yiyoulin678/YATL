@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 from typing import Any
 
 from requests import Response
@@ -18,6 +19,7 @@ from .reporter import Reporter
 from .step_executor import execute_step
 from .utils import create_context, is_skipped, load_test_yaml, search_files
 from .validator import ResponseValidator
+
 
 
 def run_tests_concurrently(runner, test_path: str = ".", max_workers: int = 10) -> None:
@@ -65,8 +67,9 @@ def run_test_not_concurrently(runner, test_path: str = ".") -> None:
             print(error(f"Test {file} failed with error: {e}"))
 
 
+
 class Runner:
-    """Orchestrates the execution of YAML-based test suites.
+    """Orchestrates the execution of YAML-rbased test suites.
 
     Loads test specifications from YAML files, runs each step sequentially,
     and maintains a context that is passed between steps.
@@ -135,6 +138,7 @@ class Runner:
                 self.template_renderer,
                 self.response_validator_factory,
             )
+
         else:
             reporter.add_info(info(f"Step {step_number}: {step.get('name', '')}"))
 
@@ -166,15 +170,18 @@ class Runner:
         context = create_context(test_specification)
         reporter = self.reporter_factory()
 
+        # Use filename as fallback when name is not specified
+        test_name = test_specification.get("name") or Path(yaml_path).name
+
         if is_skipped(test_specification):
             reporter.add_info(
-                skipped(f"Test {test_specification.get('name', '')} skipped")
+                skipped(f"Test {test_name} skipped")
             )
             reporter.print_info()
             return
 
         reporter.add_info(header("-" * 10))
-        reporter.add_info(header(f"Run test: {test_specification.get('name', '')}"))
+        reporter.add_info(header(f"Run test: {test_name}"))
         steps: list[dict] = test_specification.get("steps", [])
         step_number = 1
 
@@ -203,5 +210,5 @@ class Runner:
 
 
 if __name__ == "__main__":
-    runner = Runner(DataExtractor(), TemplateRenderer(), ResponseValidator, Reporter)
+    runner = Runner(DataExtractor(), TemplateRender(), ResponseValidator, Reporter)
     run_tests_concurrently(runner, max_workers=10)
