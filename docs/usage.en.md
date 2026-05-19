@@ -9,8 +9,9 @@ YATL is a lightweight testing framework designed for API testing using YAML-base
 3. [Response Validation](#response-validation)
 4. [Data Extraction](#data-extraction)
 5. [Templating with Jinja2](#templating-with-jinja2)
-6. [Running Tests](#running-tests)
-7. [Examples](#examples)
+6. [Parameterization of test data](#parameterization-of-test-data)
+7. [Running Tests](#running-tests)
+8. [Examples](#examples)
 
 ## Test Structure
 
@@ -325,6 +326,68 @@ steps:
       headers:
         Authorization: Bearer {{ token }}
 ```
+
+## Parameterization of test data
+
+Parameterization is a way to run the same test with different inputs. Parameterization avoids code duplication, since the same code is executed, but with different input parameters. Parameterization in YATL is implemented through the keyword `parametrize'. 
+Let's look at an example without parameterization and with it.
+
+Example without parameterization with code duplication:
+
+
+
+```yaml
+name: ping
+base_url: google.com
+
+steps:
+  - name: access_test
+    request:
+      method: GET
+    expect:
+      status: 200
+
+  - name: failed_test
+    request:
+      method: GET
+      url: /not_found
+    expect:
+      status: 404
+```
+
+In that case, if we wanted to add new checks to the test (for example, to cause error 403), then we would have to add a new step. The same goes for deleting and editing code in tests. A lot of identical tests complicate the support of test cases. Let's look at how to avoid code duplication using parameterization.:
+
+```yaml
+name: Params test
+base_url: google.com
+
+
+steps:
+  - name: Ping
+
+    parametrize:
+
+      - path: /
+        expected_status: 200
+
+      - path: /not_found
+        expected_status: 404
+
+    request:
+      method: GET
+      url: "{{ path }}"
+    expect:
+      status: "{{ expected_status }}"
+```
+
+Benefits
+
+- Reduced duplication: Define test logic once, run with multiple parameters
+- Better maintainability: Changes to test logic apply to all parameter combinations
+- Improved readability: Clear separation between test structure and test data
+- Scalability: Easy to add new test cases by adding parameter rows
+
+
 
 ## Running Tests
 
