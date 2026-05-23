@@ -3,6 +3,7 @@
 [![Python](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/Khabib73/YATL?style=social)](https://github.com/Khabib73/YATL)
+[![GitHub contributors](https://img.shields.io/github/contributors/khabib73/YATL.svg)](https://github.com/khabib73/YATL/graphs/contributors/)
 
 **YATL** is a declarative, YAML‑based testing language for API testing. If you know HTTP and YAML, you know YATL.
 
