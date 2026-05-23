@@ -12,7 +12,7 @@ typing:
 
 .PHONY: integration_tests
 integration_tests:
-	poetry run python -m src.yatl.run
+	poetry run yatl ./integration_tests
 
 .PHONY: unit_tests
 unit_tests:
